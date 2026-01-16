@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Présentation - Notre Entreprise</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(251,191,36,0.25), transparent 40%),
+                radial-gradient(circle at 80% 30%, rgba(59,130,246,0.25), transparent 45%),
+                radial-gradient(circle at 50% 80%, rgba(236,72,153,0.25), transparent 40%),
+                linear-gradient(135deg, #020617, #020617);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e5e7eb;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(14px);
+            border-radius: 26px;
+            padding: 60px;
+            box-shadow:
+                0 50px 120px rgba(0, 0, 0, 0.8),
+                inset 0 0 0 1px rgba(255,255,255,0.08);
+            text-align: center;
+        }
+
+        /* ===== TITRE PRINCIPAL ===== */
+        .title-box {
+            display: inline-block;
+            padding: 22px 60px;
+            border-radius: 20px;
+            border: 2px solid rgba(251, 191, 36, 0.7);
+            background: linear-gradient(
+                135deg,
+                rgba(251,191,36,0.25),
+                rgba(251,191,36,0.05)
+            );
+            box-shadow:
+                0 0 45px rgba(251, 191, 36, 0.45),
+                inset 0 0 15px rgba(251,191,36,0.2);
+            margin-bottom: 50px;
+        }
+
+        .title-box h1 {
+            margin: 0;
+            font-size: 2.9em;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: #fde68a;
+        }
+
+        /* ===== TEXTE ===== */
+        p {
+            font-size: 1.1em;
+            line-height: 1.8;
+            max-width: 760px;
+            margin: auto;
+            color: #e5e7eb;
+        }
+
+        /* ===== SECTIONS ===== */
+        .section-box {
+            margin-top: 50px;
+            padding: 34px 40px;
+            border-radius: 22px;
+            background: linear-gradient(
+                180deg,
+                rgba(255,255,255,0.06),
+                rgba(255,255,255,0.02)
+            );
+            border: 1px solid rgba(255,255,255,0.18);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+        }
+
+        .section-box h2 {
+            margin-bottom: 18px;
+            font-size: 1.45em;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #fbbf24;
+            display: inline-block;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(251,191,36,0.7);
+        }
+
+        /* ===== BOUTON ===== */
+        .btn {
+            display: inline-block;
+            margin-top: 60px;
+            padding: 18px 50px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #020617;
+            text-decoration: none;
+            border-radius: 60px;
+            font-size: 1.2em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: all 0.35s ease;
+            box-shadow:
+                0 20px 40px rgba(251, 191, 36, 0.45),
+                inset 0 0 10px rgba(255,255,255,0.25);
+        }
+
+        .btn:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow:
+                0 35px 70px rgba(251, 191, 36, 0.7);
+        }
+
+        /* ===== CONTACT ===== */
+        .contact {
+            margin-top: 65px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255,255,255,0.18);
+            font-size: 0.95em;
+            color: #cbd5f5;
+        }
+
+        .contact a {
+            color: #fbbf24;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .contact a:hover {
+            color: #fde68a;
+        }
+
+        .whatsapp-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .container {
+                padding: 40px 26px;
+            }
+
+            .title-box h1 {
+                font-size: 2.2em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="title-box">
+            <h1>Notre Entreprise</h1>
+        </div>
+
+        <p>
+           Au service de l’innovation, de l’investissement et de la croissance économique
+        </p>
+
+        <div class="section-box">
+            <h2>Notre Mission</h2>
+            <p>
+                Créer un écosystème fiable où le commerce, l’investissement et le recrutement se rencontrent pour générer des opportunités durables.
+            </p>
+        </div>
+
+        <div class="section-box">
+            <h2>Nos Valeurs</h2>
+            <p>
+                Intégrité – Transparence et confiance au cœur de chaque collaboration.
+Innovation – Des solutions modernes pour anticiper les défis de demain.
+Excellence – Rigueur, professionnalisme et qualité dans tout ce que nous entreprenons.
+            </p>
+        </div>
+
+        <a href="{{ url_for('home') }}" class="btn">Entrer sur le site</a>
+
+        <div class="contact">
+            <p>Créé par : <strong>MEDJOGBE Houénagnon Elysé</strong></p>
+            <a href="https://wa.me/22968593238" target="_blank">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" class="whatsapp-icon">
+                +229 68593238
+            </a>
+        </div>
+
+    </div>
+
+</body>
+</html>

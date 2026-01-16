@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nos Catalogues de Produits</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .product-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,.08);
+        }
+    </style>
+</head>
+
+<body class="text-gray-800">
+
+<header class="bg-indigo-700 text-white shadow-xl">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+        <a href="{{ url_for('home') }}" class="text-2xl font-bold hover:text-indigo-200">
+            Muni-Commerce
+        </a>
+        <nav class="space-x-2 hidden sm:block">
+            <a href="{{ url_for('home') }}" class="px-3 py-2 rounded-lg hover:bg-indigo-600">Accueil</a>
+            <a href="{{ url_for('investissement') }}" class="px-3 py-2 rounded-lg hover:bg-indigo-600">Investir</a>
+            <a href="{{ url_for('recrutement') }}" class="px-3 py-2 rounded-lg hover:bg-indigo-600">Recrutement</a>
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-10">
+
+    {% set whatsapp_number_foyer = "22957163510" %}
+{% set whatsapp_number_marche = "22968593238" %}
+{% set whatsapp_message = "Bonjour H-market, je souhaite commander l'article : " %}
+
+
+
+<h1 class="text-4xl font-extrabold text-center mb-12">
+    Nos Catalogues Détaillés
+</h1>
+
+{% set whatsapp_number = "22957163510" %}
+{% set whatsapp_message = "Bonjour, je souhaite commander l'article : " %}
+
+<!-- ===================== ARTICLES FOYER ===================== -->
+<section class="mb-16">
+    <h2 class="text-3xl font-bold border-b-4 border-indigo-500 pb-2 mb-8 text-indigo-700">
+        Articles du Foyer (Muni-Commerce)
+    </h2>
+
+    {% if articles_foyer %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for article in articles_foyer %}
+            {% if article.get('is_footer') %}
+                <div class="col-span-full p-6 bg-yellow-100 rounded-xl text-center">
+                    <p class="text-xl font-semibold">{{ article.designation }}</p>
+                </div>
+            {% else %}
+                <div class="product-card bg-white p-5 rounded-xl shadow-lg flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-1">{{ article.designation }}</h3>
+                        <span class="text-sm text-gray-500">
+                            Réf #{{ article.id }} - Prix : {{ "%.2f"|format(article.price) }} F
+                        </span>
+                    </div>
+
+                    {% set item_name = article.designation | urlencode %}
+                    <a href="https://wa.me/{{ whatsapp_number_foyer }}?text={{ whatsapp_message | urlencode }}{{ article.designation | urlencode }}"
+                    target="_blank"
+                    class="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg text-center">
+                    Commander
+                    </a>
+
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% else %}
+        <p class="text-center text-gray-500 italic">
+            Aucun produit disponible pour le moment.
+        </p>
+    {% endif %}
+</section>
+
+<!-- ===================== PRODUITS DU MARCHÉ ===================== -->
+<section>
+    <h2 class="text-3xl font-bold border-b-4 border-green-500 pb-2 mb-8 text-green-700">
+        Produits du Marché (Vivres)
+    </h2>
+
+    {% if produits_marche %}
+    <div class="bg-white rounded-xl shadow-lg p-6 divide-y">
+        {% for produit in produits_marche %}
+        <div class="flex justify-between items-center py-3 hover:bg-gray-50 rounded-lg px-2">
+            <div>
+                <span class="font-medium">{{ produit.designation }}</span>
+                <span class="text-sm text-gray-500 ml-2">- {{ "%.2f"|format(produit.price) }} F</span>
+            </div>
+
+            {% set item_name = produit.designation | urlencode %}
+            <a href="https://wa.me/{{ whatsapp_number_marche }}?text={{ whatsapp_message | urlencode }}{{ produit.designation | urlencode }}"
+            target="_blank"
+            class="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded-full">
+            Commander
+            </a>
+
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+        <p class="text-center text-gray-500 italic">
+            Aucun produit de marché disponible.
+        </p>
+    {% endif %}
+</section>
+
+</main>
+
+
+
+<footer class="bg-gray-800 text-white py-6 mt-12 text-center text-sm">
+    &copy; 2025 Muni-Commerce – Tous droits réservés
+</footer>
+
+</body>
+</html>
