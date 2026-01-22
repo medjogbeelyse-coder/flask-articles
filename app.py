@@ -1,12 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from urllib.parse import quote_plus
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from werkzeug.utils import secure_filename
 import os
 import cloudinary
 import cloudinary.uploader
 
+# ===== APP INIT =====
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'une_cle_secrete_tres_sure')
 
@@ -21,18 +22,17 @@ ADMIN_PASSWORD = "Azouassi@11"
 
 # ===== DATABASE CONFIG =====
 supabase_password = quote_plus("Medjogbe@11")  # mot de passe Supabase
-
 SUPABASE_URI = f"postgresql://postgres:{supabase_password}@db.mqjbgfiqyhgveicjubcs.supabase.co:5432/postgres"
-LOCAL_URI = "sqlite:///local_dev.db"  # fallback local pour tester
+LOCAL_URI = "sqlite:///local_dev.db"
 
-# Essaie Supabase, sinon SQLite
+# Tentative Supabase sinon fallback SQLite
 try:
     from sqlalchemy import create_engine
     engine = create_engine(SUPABASE_URI, connect_args={"connect_timeout": 5})
     conn = engine.connect()
     conn.close()
-    print("✅ Connexion Supabase OK")
     app.config['SQLALCHEMY_DATABASE_URI'] = SUPABASE_URI
+    print("✅ Connexion Supabase OK")
 except Exception as e:
     print("⚠️ Connexion Supabase échouée, fallback vers SQLite local")
     print(e)
@@ -41,7 +41,7 @@ except Exception as e:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# ===== Cloudinary =====
+# ===== CLOUDINARY =====
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
     api_key=os.getenv('CLOUDINARY_API_KEY'),
@@ -65,14 +65,14 @@ class FeatureFlag(db.Model):
 class AdminLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     action = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class RateLimit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ip = db.Column(db.String(100))
     endpoint = db.Column(db.String(100))
     count = db.Column(db.Integer, default=0)
-    last_time = db.Column(db.DateTime, default=datetime.utcnow)
+    last_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 # ===== HELPERS =====
 def log_action(action):
@@ -81,7 +81,7 @@ def log_action(action):
 
 def check_rate_limit(ip, endpoint, limit=5, minutes=1):
     record = RateLimit.query.filter_by(ip=ip, endpoint=endpoint).first()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if not record:
         record = RateLimit(ip=ip, endpoint=endpoint, count=1, last_time=now)
         db.session.add(record)
@@ -246,4 +246,4 @@ def recrutement():
 if __name__ == '__main__':
     with app.app_context():
         initialize_db()
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)
