@@ -11,9 +11,11 @@ import cloudinary.uploader
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'une_cle_secrete_tres_sure')
 
-app.config['SESSION_COOKIE_SECURE'] = True
+# ===== SESSION CONFIG =====
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+# Render supporte HTTPS, donc SESSION_COOKIE_SECURE seulement si HTTPS
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV') == 'production'
 app.permanent_session_lifetime = timedelta(minutes=30)
 
 ADMIN_WHATSAPP_NUMBER = '22968593238'
@@ -23,9 +25,9 @@ ADMIN_PASSWORD = "Azouassi@11"
 # ===== DATABASE CONFIG =====
 supabase_password = quote_plus("Medjogbe@11")  # mot de passe Supabase
 SUPABASE_URI = f"postgresql://postgres:{supabase_password}@db.mqjbgfiqyhgveicjubcs.supabase.co:5432/postgres"
-LOCAL_URI = "sqlite:///local_dev.db"
+LOCAL_PATH = os.path.join(os.getcwd(), "local_dev.db")
+LOCAL_URI = f"sqlite:///{LOCAL_PATH}"
 
-# Tentative Supabase sinon fallback SQLite
 try:
     from sqlalchemy import create_engine
     engine = create_engine(SUPABASE_URI, connect_args={"connect_timeout": 5})
@@ -155,8 +157,11 @@ def admin_dashboard():
             image_file = request.files.get('image')
             image_url = None
             if image_file and image_file.filename:
-                upload_result = cloudinary.uploader.upload(image_file)
-                image_url = upload_result['secure_url']
+                if all([os.getenv('CLOUDINARY_CLOUD_NAME'), os.getenv('CLOUDINARY_API_KEY'), os.getenv('CLOUDINARY_API_SECRET')]):
+                    upload_result = cloudinary.uploader.upload(image_file)
+                    image_url = upload_result['secure_url']
+                else:
+                    print("⚠️ Cloudinary non configuré, image non uploadée")
 
             p = Product(
                 designation=request.form['designation'],
