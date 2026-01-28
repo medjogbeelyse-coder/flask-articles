@@ -1,119 +1,128 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Accueil | Mon Application</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
-<style>
-  body {
-      font-family: 'Inter', sans-serif;
-      margin:0; padding:0;
-      background: rgba(37, 99, 235, 0.1); /* Bleu très clair pour le reste du fond */
-      overflow-x: hidden;
-      position: relative;
-  }
-
-  .intro-card {
-      background: rgba(30, 41, 59, 0.85); /* Tableau bombé */
-      border-radius: 24px;
-      padding: 30px;
-      max-width: 900px;
-      margin: 40px auto;
-      text-align: center;
-      color: #f1f5f9;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-  }
-
-  .section-cards {
-      max-width: 6xl;
-      margin: 0 auto 80px auto;
-      padding: 0 1.5rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 2rem;
-  }
-
-  .card {
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      background: rgba(30, 41, 59, 0.9);
-      border-radius: 20px;
-      padding: 2rem;
-      text-align: center;
-      color: #f1f5f9;
-  }
-
-  .card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-  }
-
-  .disabled-card {
-      filter: grayscale(70%);
-      opacity: 0.5;
-      pointer-events: none;
-      cursor: not-allowed;
-  }
-
-  h1, h2, p {
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  }
-
-  .section-title {
-      color: #38bdf8;
-  }
-
-  @media (max-width: 768px) {
-      .intro-card { padding: 20px; margin: 30px 10px; }
-      .section-cards { gap: 1rem; }
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nos Services - Accueil</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Changement de la couleur de fond ici : DÉGRADÉ VERT ÉMERAUDE SOMBRE */
+            background: linear-gradient(135deg, #064e3b 0%, #134e4a 50%, #042f2e 100%);
+            color: #e5e7eb;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .glass-card {
+            /* Fond des cartes légèrement adapté pour le nouveau fond vert */
+            background: rgba(6, 78, 59, 0.3);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        /* Style quand la carte est active */
+        .card-active:hover {
+            transform: translateY(-10px);
+            border-color: rgba(251, 191, 36, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+        /* Style quand la carte est bloquée */
+        .card-locked {
+            opacity: 0.5;
+            filter: grayscale(1);
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .lock-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .choco-admin {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #3d1d0c, #63331b);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            cursor: pointer;
+        }
+        .choco-admin:hover {
+            transform: rotate(10deg) scale(1.1);
+            border-color: #fbbf24;
+        }
+    </style>
 </head>
+<body class="flex flex-col items-center justify-center p-6">
 
-<body class="relative min-h-screen">
+    <div class="max-w-5xl w-full text-center">
+        <header class="mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-200 to-yellow-500 mb-4">
+                Nos Domaines d'Expertise
+            </h1>
+            <p class="text-slate-400">Sélectionnez une section pour découvrir nos opportunités</p>
+        </header>
 
-<div class="relative z-10 flex flex-col min-h-screen">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <a href="{{ url_for('view_section', name='commerce') }}" 
+               class="glass-card p-10 rounded-3xl group {{ 'card-active' if flags.commerce else 'card-locked' }}">
+                {% if not flags.commerce %}<span class="lock-badge">Indisponible</span>{% endif %}
+                <div class="text-5xl mb-6 grayscale group-hover:grayscale-0 transition duration-500">🛒</div>
+                <h2 class="text-2xl font-bold text-white mb-2">Commerce</h2>
+                <p class="text-slate-300 text-sm">Électroménagers et produits locaux de qualité.</p>
+            </a>
 
-  <div class="intro-card">
-      <h1 class="text-4xl md:text-5xl font-extrabold mb-4">Bienvenue !</h1>
-      <p class="text-lg md:text-xl">
-          Découvrez l’essentiel avec <strong>Muni Market</strong>, votre marché incontournable. Profitez ensuite de nos sections <strong>investissement</strong> pour faire fructifier vos idées et <strong>recrutement</strong> pour rejoindre une communauté ambitieuse.
-      </p>
-  </div>
+            <a href="{{ url_for('view_section', name='investissement') }}" 
+               class="glass-card p-10 rounded-3xl group {{ 'card-active' if flags.investissement else 'card-locked' }}">
+                {% if not flags.investissement %}<span class="lock-badge">Indisponible</span>{% endif %}
+                <div class="text-5xl mb-6 grayscale group-hover:grayscale-0 transition duration-500">📈</div>
+                <h2 class="text-2xl font-bold text-white mb-2">Investissement</h2>
+                <p class="text-slate-300 text-sm">Faites fructifier votre capital avec nous.</p>
+            </a>
 
-  <div class="section-cards">
+            <a href="{{ url_for('view_section', name='recrutement') }}" 
+               class="glass-card p-10 rounded-3xl group {{ 'card-active' if flags.recrutement else 'card-locked' }}">
+                {% if not flags.recrutement %}<span class="lock-badge">Indisponible</span>{% endif %}
+                <div class="text-5xl mb-6 grayscale group-hover:grayscale-0 transition duration-500">🤝</div>
+                <h2 class="text-2xl font-bold text-white mb-2">Recrutement</h2>
+                <p class="text-slate-300 text-sm">Rejoignez une équipe dynamique et innovante.</p>
+            </a>
 
-      {% set commerce_active = flags.COMMERCE_ACTIVE %}
-      <a href="{{ url_for('commerce') }}" class="{{ 'card' if commerce_active else 'disabled-card' }}">
-          <div class="text-6xl mb-4">🛒</div>
-          <h2 class="text-xl font-semibold mb-2 section-title">Muni Market</h2>
-          <p class="text-gray-300">Produits et services</p>
-      </a>
+        </div>
 
-      {% set investissement_active = flags.INVESTISSEMENT_ACTIVE %}
-      <a href="{{ url_for('investissement') }}" class="{{ 'card' if investissement_active else 'disabled-card' }}">
-          <div class="text-6xl mb-4">💰</div>
-          <h2 class="text-xl font-semibold mb-2 section-title">Investissement</h2>
-          <p class="text-gray-300">Devenir partenaire</p>
-      </a>
+        <footer class="mt-16">
+            <a href="{{ url_for('presentation') }}" class="text-slate-400 hover:text-amber-400 transition-colors duration-300 text-sm font-medium uppercase tracking-widest">
+                &larr; Retour à la présentation
+            </a>
+        </footer>
+    </div>
 
-      {% set recrutement_active = flags.RECRUTEMENT_ACTIVE %}
-      <a href="{{ url_for('recrutement') }}" class="{{ 'card' if recrutement_active else 'disabled-card' }}">
-          <div class="text-6xl mb-4">💼</div>
-          <h2 class="text-xl font-semibold mb-2 section-title">Recrutement</h2>
-          <p class="text-gray-300">Rejoignez-nous</p>
-      </a>
-
-  </div>
-
-</div>
-
-<a href="{{ url_for('admin_login') }}" class="fixed bottom-3 right-3 text-xs text-gray-400 hover:text-red-500 z-50 drop-shadow">
-   ⚙️ Admin
-</a>
+    <a href="{{ url_for('admin_login') }}" class="choco-admin" title="Administration">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+    </a>
 
 </body>
 </html>

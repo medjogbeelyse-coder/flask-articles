@@ -1,254 +1,171 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
-from flask_sqlalchemy import SQLAlchemy
-from urllib.parse import quote_plus
-from datetime import datetime, timedelta, timezone
-from werkzeug.utils import secure_filename
 import os
 import cloudinary
 import cloudinary.uploader
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask_sqlalchemy import SQLAlchemy
 
-# ===== APP INIT =====
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'une_cle_secrete_tres_sure')
+app.secret_key = os.environ.get("SECRET_KEY", "prime_business_2026_key")
 
-# ===== SESSION CONFIG =====
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-# Render supporte HTTPS, donc SESSION_COOKIE_SECURE seulement si HTTPS
-app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV') == 'production'
-app.permanent_session_lifetime = timedelta(minutes=30)
+# --- 1. CONFIGURATION DE LA BASE (VERROUILLÉE) ---
+# On définit les deux URLs clairement
+URL_INTERNE = "postgresql://admin_primebusiness:fVTSULMTtE7HZDlZa5WRok4L5Fw8UXJc@dpg-d5sjmke3jp1c738b13q0-a/primebusiness_data"
+URL_EXTERNE = "postgresql://admin_primebusiness:fVTSULMTtE7HZDlZa5WRok4L5Fw8UXJc@dpg-d5sjmke3jp1c738b13q0-a.virginia-postgres.render.com/primebusiness_data?sslmode=require"
 
-ADMIN_WHATSAPP_NUMBER = '22968593238'
-MIN_INVESTMENT_AMOUNT = 50000
-ADMIN_PASSWORD = "Azouassi@11"
+# Si on est sur Render, on prend l'interne, sinon l'externe
+if os.environ.get('RENDER') == 'True':
+    uri = URL_INTERNE
+else:
+    uri = URL_EXTERNE
 
-# ===== DATABASE CONFIG =====
-supabase_password = quote_plus("Medjogbe@11")  # mot de passe Supabase
-SUPABASE_URI = f"postgresql://postgres:{supabase_password}@db.mqjbgfiqyhgveicjubcs.supabase.co:5432/postgres"
-LOCAL_PATH = os.path.join(os.getcwd(), "local_dev.db")
-LOCAL_URI = f"sqlite:///{LOCAL_PATH}"
+# Sécurité supplémentaire : si l'URL commence par postgres:// (sans le ql), on corrige
+if uri and uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
 
-try:
-    from sqlalchemy import create_engine
-    engine = create_engine(SUPABASE_URI, connect_args={"connect_timeout": 5})
-    conn = engine.connect()
-    conn.close()
-    app.config['SQLALCHEMY_DATABASE_URI'] = SUPABASE_URI
-    print("✅ Connexion Supabase OK")
-except Exception as e:
-    print("⚠️ Connexion Supabase échouée, fallback vers SQLite local")
-    print(e)
-    app.config['SQLALCHEMY_DATABASE_URI'] = LOCAL_URI
-
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# ===== CLOUDINARY =====
-cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.getenv('CLOUDINARY_API_KEY'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
-    secure=True
-)
-
-# ===== MODELS =====
-class Product(db.Model):
+# --- 2. MODÈLES ---
+class Produit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    designation = db.Column(db.String(255), nullable=False)
-    category = db.Column(db.String(100), nullable=False)
-    is_footer = db.Column(db.Boolean, default=False)
-    price = db.Column(db.Float, default=0)
-    image = db.Column(db.String(255), nullable=True)
+    designation = db.Column(db.String(100), nullable=False)
+    prix = db.Column(db.Float, nullable=False)
+    section = db.Column(db.String(50), nullable=False)
+    image = db.Column(db.String(255))
+    cloudinary_id = db.Column(db.String(100))
+
+class Poste(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    titre = db.Column(db.String(100), nullable=False)
 
 class FeatureFlag(db.Model):
-    key = db.Column(db.String(50), primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(50), unique=True, nullable=False)
     active = db.Column(db.Boolean, default=True)
 
-class AdminLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    action = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+# --- 3. CONFIGURATION CLOUDINARY ---
+cloudinary.config( 
+  cloud_name = "ds5exviel", 
+  api_key = "128277898241178", 
+  api_secret = "VhODvT9UTr0wim4SZuFPR-UmixE"
+)
 
-class RateLimit(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    ip = db.Column(db.String(100))
-    endpoint = db.Column(db.String(100))
-    count = db.Column(db.Integer, default=0)
-    last_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-
-# ===== HELPERS =====
-def log_action(action):
-    db.session.add(AdminLog(action=action))
-    db.session.commit()
-
-def check_rate_limit(ip, endpoint, limit=5, minutes=1):
-    record = RateLimit.query.filter_by(ip=ip, endpoint=endpoint).first()
-    now = datetime.now(timezone.utc)
-    if not record:
-        record = RateLimit(ip=ip, endpoint=endpoint, count=1, last_time=now)
-        db.session.add(record)
-        db.session.commit()
-        return True
-    if now - record.last_time > timedelta(minutes=minutes):
-        record.count = 1
-        record.last_time = now
-        db.session.commit()
-        return True
-    if record.count >= limit:
-        return False
-    record.count += 1
-    db.session.commit()
-    return True
-
-def is_admin_logged_in():
-    return session.get('logged_in', False)
-
-def feature_active(key):
-    flag = FeatureFlag.query.filter_by(key=key).first()
-    return flag and flag.active
-
-def get_products(category=None):
-    q = Product.query
-    if category:
-        q = q.filter_by(category=category)
-    return q.all()
-
-@app.template_filter('get_attr')
-def get_attr(obj, key, default=None):
-    if isinstance(obj, dict):
-        return obj.get(key, default)
-    return getattr(obj, key, default)
-
+# --- 4. INJECTION DES FLAGS ---
 @app.context_processor
 def inject_flags():
-    return {'flags': {f.key: f.active for f in FeatureFlag.query.all()}}
+    try:
+        flags = {f.key: f.active for f in FeatureFlag.query.all()}
+        return {'flags': flags}
+    except:
+        return {'flags': {'commerce': True, 'investissement': True, 'recrutement': True}}
 
-# ===== INIT DB =====
-def initialize_db():
-    db.create_all()
-    for key in ['COMMERCE_ACTIVE', 'INVESTISSEMENT_ACTIVE', 'RECRUTEMENT_ACTIVE']:
-        if not FeatureFlag.query.filter_by(key=key).first():
-            db.session.add(FeatureFlag(key=key, active=True))
-    db.session.commit()
-
-# ===== ROUTES ADMIN =====
-@app.route('/admin', methods=['GET', 'POST'])
-def admin_login():
-    if is_admin_logged_in():
-        return redirect(url_for('admin_dashboard'))
-    if request.method == 'POST':
-        if not check_rate_limit(request.remote_addr, 'admin_login'):
-            abort(429)
-        if request.form.get('password') == ADMIN_PASSWORD:
-            session['logged_in'] = True
-            session.permanent = True
-            log_action("Connexion admin")
-            return redirect(url_for('admin_dashboard'))
-        flash("Mot de passe invalide")
-    return render_template('admin-login.html')
-
-@app.route('/admin/dashboard', methods=['GET', 'POST'])
-def admin_dashboard():
-    if not is_admin_logged_in():
-        return redirect(url_for('admin_login'))
-
-    if request.method == 'POST':
-        if 'designation' in request.form:
-            image_file = request.files.get('image')
-            image_url = None
-            if image_file and image_file.filename:
-                if all([os.getenv('CLOUDINARY_CLOUD_NAME'), os.getenv('CLOUDINARY_API_KEY'), os.getenv('CLOUDINARY_API_SECRET')]):
-                    upload_result = cloudinary.uploader.upload(image_file)
-                    image_url = upload_result['secure_url']
-                else:
-                    print("⚠️ Cloudinary non configuré, image non uploadée")
-
-            p = Product(
-                designation=request.form['designation'],
-                category=request.form['category'],
-                is_footer=bool(request.form.get('is_footer')),
-                price=float(request.form.get('price', 0)),
-                image=image_url
-            )
-            db.session.add(p)
+# --- 5. INITIALISATION DES TABLES ---
+with app.app_context():
+    try:
+        db.create_all()
+        if not FeatureFlag.query.first():
+            for k in ["commerce", "investissement", "recrutement"]:
+                db.session.add(FeatureFlag(key=k, active=True))
             db.session.commit()
-            log_action(f"Ajout produit {p.designation}")
+    except Exception as e:
+        print(f"⚠️ Erreur DB: {e}")
 
-        elif 'delete_id' in request.form:
-            p = Product.query.get(int(request.form['delete_id']))
-            if p:
-                db.session.delete(p)
-                db.session.commit()
-                log_action(f"Suppression produit {p.designation}")
+# --- ROUTES ---
 
-        elif 'flag_key' in request.form:
-            flag = FeatureFlag.query.filter_by(key=request.form['flag_key']).first()
-            if flag:
-                flag.active = not flag.active
-                db.session.commit()
-                log_action(f"Toggle {flag.key}")
+@app.route("/")
+def presentation():
+    return render_template("presentation.html")
 
-        return redirect(url_for('admin_dashboard'))
+@app.route("/accueil")
+def home():
+    return render_template("index.html")
 
-    return render_template(
-        'admin-dashboard.html',
-        products_foyer=get_products('foyer'),
-        products_marche=get_products('marche')
-    )
-
-@app.route('/admin/logout')
-def admin_logout():
-    session.clear()
-    log_action("Déconnexion admin")
+@app.route("/section/<name>")
+def view_section(name):
+    try:
+        flag = FeatureFlag.query.filter_by(key=name).first()
+        if flag and flag.active:
+            if name == "investissement":
+                return render_template("section_investissement.html")
+            if name == "recrutement":
+                postes_list = Poste.query.all()
+                return render_template("section_recrutement.html", postes=postes_list)
+            
+            prods = Produit.query.all()
+            return render_template("section.html", name=name, produits=prods)
+    except:
+        pass
     return redirect(url_for('home'))
 
-# ===== ROUTES PUBLIQUES =====
-@app.route('/')
-@app.route('/presentation')
-def presentation():
-    return render_template('presentation.html')
+@app.route("/admin", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        # Remplace 'votre_mot_de_passe' par ton mot de passe réel
+        if request.form.get("password") == os.environ.get("ADMIN_PWD", "Azouassi@11"): 
+            session["admin_logged_in"] = True
+            return redirect(url_for("admin_panel"))
+        flash("Mot de passe incorrect")
+    return render_template("admin_login.html")
 
-@app.route('/home')
-def home():
-    return render_template('index.html')
+@app.route("/admin/panel", methods=["GET", "POST"])
+def admin_panel():
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
 
-@app.route('/commerce')
-def commerce():
-    if not feature_active('COMMERCE_ACTIVE'):
-        return render_template('indisponible.html', section_name="Commerce")
-    return render_template(
-        'commerce.html',
-        articles_foyer=get_products('foyer'),
-        produits_marche=get_products('marche')
-    )
+    try:
+        if request.method == "POST":
+            if "flag_key" in request.form:
+                f = FeatureFlag.query.filter_by(key=request.form.get("flag_key")).first()
+                if f:
+                    f.active = not f.active
+                    db.session.commit()
+            
+            elif "designation" in request.form:
+                file = request.files.get('image_file')
+                img_url, p_id = "", ""
+                if file and file.filename != '':
+                    res = cloudinary.uploader.upload(file)
+                    img_url, p_id = res['secure_url'], res['public_id']
+                
+                new_p = Produit(designation=request.form.get("designation"), 
+                                prix=float(request.form.get("price")),
+                                section=request.form.get("category"), 
+                                image=img_url, cloudinary_id=p_id)
+                db.session.add(new_p)
+                db.session.commit()
 
-@app.route('/investissement', methods=['GET', 'POST'])
-def investissement():
-    if not feature_active('INVESTISSEMENT_ACTIVE'):
-        return render_template('indisponible.html', section_name="Investissement")
-    if request.method == 'POST':
-        if not check_rate_limit(request.remote_addr, 'investissement'):
-            abort(429)
-        montant = int(request.form.get('montant', 0))
-        if montant < MIN_INVESTMENT_AMOUNT:
-            return redirect(url_for('investissement'))
-        msg = quote_plus(f"Investissement\nNom:{request.form.get('nom')}\nMontant:{montant}")
-        return redirect(f"https://wa.me/{ADMIN_WHATSAPP_NUMBER}?text={msg}")
-    return render_template('investissement.html')
+            elif "delete_id" in request.form:
+                p = Produit.query.get(int(request.form.get("delete_id")))
+                if p:
+                    if p.cloudinary_id: cloudinary.uploader.destroy(p.cloudinary_id)
+                    db.session.delete(p)
+                    db.session.commit()
 
-@app.route('/recrutement', methods=['GET', 'POST'])
-def recrutement():
-    if not feature_active('RECRUTEMENT_ACTIVE'):
-        return render_template('indisponible.html', section_name="Recrutement")
-    if request.method == 'POST':
-        if not check_rate_limit(request.remote_addr, 'recrutement'):
-            abort(429)
-        msg = quote_plus(f"Candidature {request.form.get('prenom')} {request.form.get('nom')}")
-        return redirect(f"https://wa.me/{ADMIN_WHATSAPP_NUMBER}?text={msg}")
-    return render_template('recrutement.html')
+            elif "titre_poste" in request.form:
+                db.session.add(Poste(titre=request.form.get("titre_poste")))
+                db.session.commit()
 
-# ===== MAIN =====
-if __name__ == '__main__':
-    with app.app_context():
-        initialize_db()
-    app.run(host='0.0.0.0', port=5000, debug=False)
+            elif "delete_poste_id" in request.form:
+                po = Poste.query.get(int(request.form.get("delete_poste_id")))
+                if po:
+                    db.session.delete(po)
+                    db.session.commit()
+
+            return redirect(url_for("admin_panel"))
+
+        return render_template("admin_panel.html", 
+                               flags={f.key: f.active for f in FeatureFlag.query.all()}, 
+                               produits=Produit.query.all(), 
+                               postes=Poste.query.all())
+    except Exception as e:
+        return f"Erreur: {str(e)}"
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("admin_logged_in", None)
+    return redirect(url_for("presentation"))
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
