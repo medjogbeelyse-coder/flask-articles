@@ -7,30 +7,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { 
-            background: #f8fafc; /* Blanc cassé doux */
-            color: #1e293b; 
-            font-family: 'Inter', sans-serif; 
-        }
-        .card-item { 
-            background: #ffffff; 
-            border: 1px solid #e2e8f0; 
-            transition: all 0.3s ease; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-        .card-item:hover { 
-            transform: translateY(-8px); 
-            border-color: #cbd5e1; 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        .btn-order { transition: all 0.2s ease; }
-        .btn-order:active { transform: scale(0.95); }
+        body { background: #f8fafc; color: #1e293b; font-family: 'Inter', sans-serif; }
+        .card-item { background: #ffffff; border: 1px solid #e2e8f0; transition: all 0.3s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .card-item:hover { transform: translateY(-8px); border-color: #cbd5e1; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        
+        /* Animation de la barre */
+        @keyframes progress { from { width: 0%; } to { width: 100%; } }
+        .animate-progress-5s { animation: progress 5s linear forwards; }
+        
+        /* Style de la modale */
+        #orderModal { backdrop-filter: blur(4px); transition: all 0.3s ease; }
     </style>
 </head>
 <body class="p-6 md:p-12">
 
     <div class="max-w-6xl mx-auto">
-        
         <div class="mb-20">
             <div class="flex items-center justify-between mb-8 border-b border-slate-200 pb-4">
                 <h2 class="text-3xl font-black text-slate-900 flex items-center gap-3">
@@ -48,19 +39,12 @@
                         </div>
                         <h3 class="text-sm font-bold h-10 overflow-hidden mb-2 text-slate-700">{{ p.designation }}</h3>
                         <p class="text-amber-600 font-black text-xl mb-4">{{ "{:,.0f}".format(p.prix) }} F</p>
-                        <a href="https://wa.me/22957163510" class="btn-order block text-center bg-amber-500 text-white font-bold py-3 rounded-xl text-xs uppercase">
+                        <button onclick="openOrderModal('{{ p.designation }}', '{{ p.prix }}', '22957163510')" 
+                                class="block text-center bg-amber-500 text-white font-bold py-3 rounded-xl text-xs uppercase">
                             Commander
-                        </a>
+                        </button>
                     </div>
                 {% endfor %}
-            </div>
-        </div>
-
-        <div class="flex justify-center mb-20">
-            <div class="flex gap-2">
-                <div class="w-2 h-2 rounded-full bg-slate-200"></div>
-                <div class="w-20 h-2 rounded-full bg-slate-200"></div>
-                <div class="w-2 h-2 rounded-full bg-slate-200"></div>
             </div>
         </div>
 
@@ -80,9 +64,10 @@
                         </div>
                         <h3 class="text-sm font-bold h-10 overflow-hidden mb-2 text-slate-700">{{ p.designation }}</h3>
                         <p class="text-emerald-600 font-black text-xl mb-4">{{ "{:,.0f}".format(p.prix) }} F</p>
-                        <a href="https://wa.me/22968593238" class="btn-order block text-center bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs uppercase">
+                        <button onclick="openOrderModal('{{ p.designation }}', '{{ p.prix }}', '22968593238')" 
+                                class="block text-center bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs uppercase">
                             Commander
-                        </a>
+                        </button>
                     </div>
                 {% endfor %}
             </div>
@@ -94,5 +79,85 @@
             </a>
         </div>
     </div>
+
+    <div id="orderModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-md w-full rounded-[2.5rem] p-8 shadow-2xl">
+            
+            <div id="modalForm">
+                <h2 class="text-2xl font-black text-center mb-6 uppercase tracking-tighter">Votre Nom pour la commande</h2>
+                <input type="text" id="clientName" placeholder="Entrez votre nom complet" 
+                       class="w-full p-4 bg-slate-100 border-none rounded-2xl mb-6 focus:ring-2 focus:ring-slate-900 outline-none">
+                
+                <button onclick="startOrderProcess()" 
+                        class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl uppercase text-sm tracking-widest">
+                    Confirmer
+                </button>
+                <button onclick="closeModal()" class="w-full mt-4 text-slate-400 text-xs font-bold uppercase">Annuler</button>
+            </div>
+
+            <div id="modalWait" class="hidden text-center py-6">
+                <div class="text-4xl mb-4">🛒</div>
+                <h2 class="text-xl font-black uppercase mb-2">Traitement en cours</h2>
+                <p id="statusText" class="text-slate-500 text-sm mb-6 h-8 italic">Vérification des stocks...</p>
+                
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div id="progressBar" class="bg-slate-900 h-full w-0"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentProduct = {};
+
+        function openOrderModal(name, price, phone) {
+            currentProduct = { name, price, phone };
+            document.getElementById('orderModal').classList.remove('hidden');
+            document.getElementById('modalForm').classList.remove('hidden');
+            document.getElementById('modalWait').classList.add('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('orderModal').classList.add('hidden');
+        }
+
+        function startOrderProcess() {
+            const clientName = document.getElementById('clientName').value.trim();
+            if (!clientName) return alert("Veuillez entrer votre nom.");
+
+            // Switch d'affichage
+            document.getElementById('modalForm').classList.add('hidden');
+            document.getElementById('modalWait').classList.remove('hidden');
+            
+            // Lancement barre et texte
+            const bar = document.getElementById('progressBar');
+            bar.classList.add('animate-progress-5s');
+            
+            const status = document.getElementById('statusText');
+            setTimeout(() => { status.innerText = "Génération du bon de commande..."; }, 1500);
+            setTimeout(() => { status.innerText = "Connexion à WhatsApp..."; }, 3500);
+
+            // Message final
+            const msg = `🛍 *NOUVELLE COMMANDE - RÉSEAU MEDJOGBE*\n\n` +
+                        `Bonjour, je suis *${clientName}*.\n` +
+                        `Je souhaite commander le produit suivant :\n\n` +
+                        `📦 *Produit :* ${currentProduct.name}\n` +
+                        `💰 *Prix :* ${currentProduct.price} F\n\n` +
+                        `❓ *Question :* J'aimerais savoir comment les produits me seront envoyés et quel est le délai de réception ?\n\n` +
+                        `✅ _Commande effectuée via le site web_`;
+
+            const encodedMsg = encodeURIComponent(msg);
+            const isMobile = /iPhone|Android/i.test(navigator.userAgent);
+            const finalUrl = isMobile 
+                ? `whatsapp://send?phone=${currentProduct.phone}&text=${encodedMsg}` 
+                : `https://api.whatsapp.com/send?phone=${currentProduct.phone}&text=${encodedMsg}`;
+
+            // Redirection après 5s
+            setTimeout(() => {
+                window.location.href = finalUrl;
+                setTimeout(() => { closeModal(); }, 1000);
+            }, 5000);
+        }
+    </script>
 </body>
 </html>

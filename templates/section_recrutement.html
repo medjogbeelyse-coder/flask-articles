@@ -6,23 +6,37 @@
     <title>Recrutement - Réseau MEDJOGBE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
+        
         body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+        
         .card-white {
             background: #ffffff;
             border: 1px solid #e2e8f0;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
         }
+
         input, select {
             background: #f1f5f9 !important;
             border: 1px solid #e2e8f0 !important;
             border-radius: 12px !important;
             transition: all 0.2s ease;
         }
+
         input:focus, select:focus {
             border-color: #020617 !important;
             background: #ffffff !important;
             outline: none;
             box-shadow: 0 0 0 4px rgba(2, 6, 23, 0.05);
+        }
+
+        @keyframes progress { from { width: 0%; } to { width: 100%; } }
+        .animate-progress-5s { animation: progress 5s linear forwards; }
+
+        #thanksSection { animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -30,6 +44,10 @@
 
     <div class="max-w-xl w-full">
         
+        <div class="mb-4">
+            <a href="/accueil" class="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-all">← Retour à l'accueil</a>
+        </div>
+
         <div class="flex justify-center mb-8">
             <svg width="60" height="40" viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="25" cy="25" r="18" stroke="#020617" stroke-width="3"/>
@@ -48,13 +66,18 @@
                 <form class="space-y-6">
                     
                     <div class="space-y-1">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nom Complet</label>
-                        <input type="text" id="nom_r" placeholder="Ex: Jean Dupont" class="w-full py-4 px-4 text-slate-900 placeholder:text-slate-300">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nom et Prénom</label>
+                        <input type="text" id="nom_r" placeholder="Ex: Jean Dupont" class="w-full py-4 px-4 text-slate-900">
                     </div>
 
                     <div class="space-y-1">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Dernier diplôme</label>
-                        <input type="text" id="diplome_r" placeholder="Ex: Master en Gestion" class="w-full py-4 px-4 text-slate-900 placeholder:text-slate-300">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Année de naissance</label>
+                        <input type="number" id="annee_r" placeholder="Ex: 1998" class="w-full py-4 px-4 text-slate-900">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nationalité</label>
+                        <input type="text" id="nat_r" placeholder="Ex: Béninoise" class="w-full py-4 px-4 text-slate-900">
                     </div>
                     
                     <div class="space-y-1 relative">
@@ -75,31 +98,28 @@
                         </p>
                     </div>
 
-                    <div class="text-center bg-slate-900 py-3 rounded-xl">
-                        <p class="text-[9px] text-slate-400 font-bold tracking-[0.3em] uppercase mb-1 text-white/50">Garantie Éthique</p>
+                    <div class="text-center bg-slate-900 py-3 rounded-xl shadow-inner border-b-2 border-blue-500">
+                        <p class="text-[9px] text-white/40 font-bold tracking-[0.3em] uppercase mb-1">Garantie Éthique</p>
                         <p class="text-xl font-black text-white italic tracking-tighter">SERVICE <span class="text-blue-400 underline decoration-2">100% GRATUIT</span></p>
                     </div>
 
-                    <button type="button" onclick="executeSend('wa')" 
+                    <button type="button" onclick="executeSend()" 
                             class="w-full bg-slate-900 hover:bg-black text-white font-black py-5 rounded-xl shadow-lg transition-all transform active:scale-95 uppercase tracking-[0.2em] text-xs">
-                        Postuler maintenant
-                    </button>
-                    
-                    <button type="button" onclick="executeSend('email')" class="w-full text-slate-400 text-[10px] uppercase tracking-widest font-bold hover:text-slate-900 transition-colors">
-                        Postuler via Email professionnel
+                        Valider ma candidature
                     </button>
                 </form>
             </div>
 
             <div id="thanksSection" class="hidden text-center py-10 space-y-6">
-                <div class="w-16 h-16 bg-slate-900 text-white rounded-full flex items-center justify-center text-2xl mx-auto shadow-xl">✓</div>
-                <h2 class="text-2xl font-black text-slate-900">Demande Reçue</h2>
-                <p class="text-slate-500 text-sm">
-                    Merci <span id="userName" class="font-black text-slate-900 underline"></span>.<br>
-                    Redirection sécurisée vers WhatsApp...
+                <div class="w-20 h-20 bg-slate-900 text-white rounded-full flex items-center justify-center text-3xl mx-auto shadow-2xl animate-bounce">✓</div>
+                <h2 class="text-2xl font-black text-slate-900 uppercase tracking-tighter">Analyse en cours</h2>
+                
+                <p id="statusText" class="text-slate-500 text-sm h-12 flex items-center justify-center px-4 font-medium italic">
+                    Préparation de votre dossier...
                 </p>
-                <div class="w-24 mx-auto bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                    <div class="bg-slate-900 h-full animate-[progress_2s_linear]"></div>
+
+                <div class="w-48 mx-auto bg-slate-100 h-2 rounded-full overflow-hidden shadow-inner border border-slate-200">
+                    <div class="bg-gradient-to-r from-slate-600 to-slate-900 h-full animate-progress-5s"></div>
                 </div>
             </div>
 
@@ -109,35 +129,55 @@
     </div>
 
     <script>
-    function executeSend(type) {
+    function executeSend() {
+        // 1. Collecte des données
         const d = {
-            nom: document.getElementById('nom_r').value,
-            diplome: document.getElementById('diplome_r').value,
-            poste: document.getElementById('poste_r').value
+            nom: document.getElementById('nom_r').value.trim(),
+            annee: document.getElementById('annee_r').value.trim(),
+            nat: document.getElementById('nat_r').value.trim(),
+            poste: document.getElementById('poste_r').value.trim()
         };
 
-        if(!d.nom || !d.diplome || !d.poste) {
+        // 2. Vérification rapide
+        if(!d.nom || !d.annee || !d.nat || !d.poste) {
             return alert("❌ Veuillez remplir tous les champs.");
         }
 
-        const msg = `*CANDIDATURE - RÉSEAU MEDJOGBE*\n\n👤 *Nom:* ${d.nom}\n💼 *Poste:* ${d.poste}\n🎓 *Diplôme:* ${d.diplome}\n\n👉 _Je joins mon CV à ce message._\n\n✅ *Note:* Service gratuit (Ne payez rien).`;
+        // 3. Construction du message personnalisé
+        const msg = `🏛 *RÉSEAU MEDJOGBE | Recrutement*\n\n` +
+                    `Je m'appelle *${d.nom}*, né(e) en *${d.annee}*, de nationalité *${d.nat}*.\n\n` +
+                    `J'aimerais postuler pour le poste de *${d.poste}*.\n\n` +
+                    `Je joins mon CV à ce message pour l'étude de mon dossier.\n\n` +
+                    `⚖️ _Service 100% Gratuit_`;
+        
+        const encodedMsg = encodeURIComponent(msg);
+        
+        // --- LOGIQUE DE REDIRECTION DIRECTE ---
+        // On détecte si c'est un mobile pour utiliser le protocole whatsapp://
+        const isMobile = /iPhone|Android/i.test(navigator.userAgent);
+        const waUrl = isMobile 
+            ? `whatsapp://send?phone=22968593238&text=${encodedMsg}` 
+            : `https://api.whatsapp.com/send?phone=22968593238&text=${encodedMsg}`;
 
-        document.getElementById('userName').innerText = d.nom.split(' ')[0];
+        // 4. UI Transition
+        const statusLabel = document.getElementById('statusText');
         document.getElementById('formSection').classList.add('hidden');
         document.getElementById('thanksSection').classList.remove('hidden');
 
+        // Séquence des messages pendant les 5 secondes
+        setTimeout(() => { statusLabel.innerHTML = `Vérification du profil de <span class="text-slate-900 font-black">${d.nom.split(' ')[0]}</span>...`; }, 1500);
+        setTimeout(() => { statusLabel.innerHTML = `Lancement de la messagerie sécurisée...`; }, 3500);
+
+        // 5. Redirection finale à 5 secondes
         setTimeout(() => {
-            if(type === 'wa') {
-                window.open(`https://wa.me/22968593238?text=${encodeURIComponent(msg)}`, '_blank');
-            } else {
-                window.location.href = `mailto:medjogbeelyse@gmail.com?subject=Candidature - ${d.nom}&body=${encodeURIComponent(msg)}`;
-            }
-        }, 2000);
+            window.location.href = waUrl;
+            
+            // Backup si le navigateur bloque
+            setTimeout(() => {
+                window.open(waUrl, '_self');
+            }, 500);
+        }, 5000);
     }
     </script>
-
-    <style>
-        @keyframes progress { from { width: 0%; } to { width: 100%; } }
-    </style>
 </body>
 </html>
