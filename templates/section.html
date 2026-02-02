@@ -2,162 +2,224 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espace Boutique - Commerce</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PRIME BUSINESS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { background: #f8fafc; color: #1e293b; font-family: 'Inter', sans-serif; }
-        .card-item { background: #ffffff; border: 1px solid #e2e8f0; transition: all 0.3s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .card-item:hover { transform: translateY(-8px); border-color: #cbd5e1; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        
-        /* Animation de la barre */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; display: flex; justify-content: center; overflow-x: hidden; }
+
+        /* --- ÉCRAN DE BIENVENUE (3 SECONDES) --- */
+        #welcome-screen {
+            position: fixed; inset: 0; background: #ffffff; z-index: 2000;
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
+            transition: opacity 0.8s ease-in-out;
+        }
+        .welcome-text {
+            font-size: 16px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 4px; color: #0f172a; opacity: 0; transform: translateY(10px);
+            animation: welcomeFade 2.5s forwards;
+        }
+        @keyframes welcomeFade {
+            20% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+
+        /* --- BOUTIQUE --- */
+        .mobile-container { 
+            width: 100%; max-width: 500px; background: #f8fafc; min-height: 100vh; 
+            position: relative; opacity: 0; transition: opacity 1s ease-in;
+        }
+        .show-shop { opacity: 1 !important; }
+
+        .card-item { 
+            background: #ffffff; border-radius: 12px; border: 1px solid #f1f5f9; padding: 6px; 
+            display: flex; flex-direction: column; justify-content: space-between;
+            opacity: 0; transform: scale(0.95);
+        }
+        .animate-card { animation: fadeInCard 0.6s ease-out forwards; }
+        @keyframes fadeInCard { to { opacity: 1; transform: scale(1); } }
+
+        /* PANIER & UI */
+        #cartBadge { background: #0f172a; color: white; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 15px rgba(0,0,0,0.2); cursor: pointer; position: relative; }
+        #cartCount { position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; font-size: 10px; font-weight: 800; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #f8fafc; }
+        #cartWrapper { position: fixed; bottom: 20px; right: calc(50% - 230px); z-index: 50; display: flex; align-items: center; gap: 8px; }
+        @media (max-width: 500px) { #cartWrapper { right: 15px; } }
+        .cart-open { transform: translateY(0) !important; }
         @keyframes progress { from { width: 0%; } to { width: 100%; } }
-        .animate-progress-5s { animation: progress 5s linear forwards; }
-        
-        /* Style de la modale */
-        #orderModal { backdrop-filter: blur(4px); transition: all 0.3s ease; }
+        .animate-progress-3s { animation: progress 3s linear forwards; }
+        @keyframes pointRight { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(8px); } }
+        .finger-pointer { animation: pointRight 0.8s infinite ease-in-out; }
     </style>
 </head>
-<body class="p-6 md:p-12">
+<body>
 
-    <div class="max-w-6xl mx-auto">
-        <div class="mb-20">
-            <div class="flex items-center justify-between mb-8 border-b border-slate-200 pb-4">
-                <h2 class="text-3xl font-black text-slate-900 flex items-center gap-3">
-                    <span class="bg-amber-500 w-2 h-10 rounded-full"></span>
-                    🏠 GEM & MATÉRIEL
-                </h2>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Équipements Lourds</span>
-            </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {% for p in produits if p.section == 'commerce_gem' %}
-                    <div class="card-item p-4 rounded-3xl flex flex-col">
-                        <div class="relative overflow-hidden rounded-2xl mb-4 h-44 bg-slate-100">
-                            <img src="{{ p.image }}" class="w-full h-full object-cover">
-                        </div>
-                        <h3 class="text-sm font-bold h-10 overflow-hidden mb-2 text-slate-700">{{ p.designation }}</h3>
-                        <p class="text-amber-600 font-black text-xl mb-4">{{ "{:,.0f}".format(p.prix) }} F</p>
-                        <button onclick="openOrderModal('{{ p.designation }}', '{{ p.prix }}', '22957163510')" 
-                                class="block text-center bg-amber-500 text-white font-bold py-3 rounded-xl text-xs uppercase">
-                            Commander
-                        </button>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="mb-20">
-            <div class="flex items-center justify-between mb-8 border-b border-slate-200 pb-4">
-                <h2 class="text-3xl font-black text-emerald-600 flex items-center gap-3">
-                    <span class="bg-emerald-500 w-2 h-10 rounded-full"></span>
-                    🧺 LE MARCHÉ
-                </h2>
-            </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {% for p in produits if p.section == 'commerce_marche' %}
-                    <div class="card-item p-4 rounded-3xl flex flex-col">
-                        <div class="relative overflow-hidden rounded-2xl mb-4 h-44 bg-slate-100">
-                            <img src="{{ p.image }}" class="w-full h-full object-cover">
-                        </div>
-                        <h3 class="text-sm font-bold h-10 overflow-hidden mb-2 text-slate-700">{{ p.designation }}</h3>
-                        <p class="text-emerald-600 font-black text-xl mb-4">{{ "{:,.0f}".format(p.prix) }} F</p>
-                        <button onclick="openOrderModal('{{ p.designation }}', '{{ p.prix }}', '22968593238')" 
-                                class="block text-center bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs uppercase">
-                            Commander
-                        </button>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="text-center pb-20">
-            <a href="{{ url_for('home') }}" class="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-900">
-                ← Retour à l'accueil
-            </a>
+    <div id="welcome-screen">
+        <h2 class="welcome-text">Bienvenue dans les rayons</h2>
+        <div class="mt-4 flex gap-1">
+            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce"></span>
+            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
         </div>
     </div>
 
-    <div id="orderModal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-        <div class="bg-white max-w-md w-full rounded-[2.5rem] p-8 shadow-2xl">
-            
-            <div id="modalForm">
-                <h2 class="text-2xl font-black text-center mb-6 uppercase tracking-tighter">Votre Nom pour la commande</h2>
-                <input type="text" id="clientName" placeholder="Entrez votre nom complet" 
-                       class="w-full p-4 bg-slate-100 border-none rounded-2xl mb-6 focus:ring-2 focus:ring-slate-900 outline-none">
-                
-                <button onclick="startOrderProcess()" 
-                        class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl uppercase text-sm tracking-widest">
-                    Confirmer
-                </button>
-                <button onclick="closeModal()" class="w-full mt-4 text-slate-400 text-xs font-bold uppercase">Annuler</button>
-            </div>
+    <div id="shop-container" class="mobile-container p-3 pb-24">
+        <header class="text-center py-6">
+            <h1 class="text-xl font-black text-slate-900 tracking-tighter uppercase">PRIME BUSINESS</h1>
+            <p class="text-[9px] text-slate-400 font-bold tracking-[0.2em] uppercase">L'Excellence au quotidien</p>
+        </header>
 
-            <div id="modalWait" class="hidden text-center py-6">
-                <div class="text-4xl mb-4">🛒</div>
-                <h2 class="text-xl font-black uppercase mb-2">Traitement en cours</h2>
-                <p id="statusText" class="text-slate-500 text-sm mb-6 h-8 italic">Vérification des stocks...</p>
-                
-                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div id="progressBar" class="bg-slate-900 h-full w-0"></div>
+        <div class="mb-8">
+            <h2 class="text-sm font-black text-slate-800 mb-3 flex items-center gap-2">
+                <span class="bg-amber-500 w-1 h-4 rounded-full"></span> GEM & MATÉRIEL
+            </h2>
+            <div class="grid grid-cols-4 gap-2">
+                {% for p in produits if p.section == 'commerce_gem' %}
+                <div class="card-item shadow-sm">
+                    <img src="{{ p.image }}" class="w-full h-16 object-cover rounded-lg mb-1">
+                    <h3 class="text-[8px] font-bold h-6 overflow-hidden uppercase">{{ p.designation }}</h3>
+                    <p class="text-amber-600 font-black text-[9px] text-center">{{ "{:,.0f}".format(p.prix) }} F</p>
+                    <button onclick="addToCart('{{ p.designation }}', {{ p.prix }}, 'GEM')" class="bg-amber-500 text-white py-1 rounded-md text-[7px] font-bold uppercase active:scale-95">Prendre</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <h2 class="text-sm font-black text-emerald-600 mb-3 flex items-center gap-2">
+                <span class="bg-emerald-500 w-1 h-4 rounded-full"></span> LE MARCHÉ
+            </h2>
+            <div class="grid grid-cols-4 gap-2">
+                {% for p in produits if p.section == 'commerce_marche' %}
+                <div class="card-item shadow-sm">
+                    <img src="{{ p.image }}" class="w-full h-16 object-cover rounded-lg mb-1">
+                    <h3 class="text-[8px] font-bold h-6 overflow-hidden uppercase">{{ p.designation }}</h3>
+                    <p class="text-emerald-600 font-black text-[9px] text-center">{{ "{:,.0f}".format(p.prix) }} F</p>
+                    <button onclick="addToCart('{{ p.designation }}', {{ p.prix }}, 'MARCHE')" class="bg-emerald-600 text-white py-1 rounded-md text-[7px] font-bold uppercase active:scale-95">Prendre</button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="cartWrapper">
+            <div id="pointerIcon" class="finger-pointer text-3xl hidden">👉</div>
+            <div id="cartBadge" onclick="toggleCart()">
+                <span id="cartCount">0</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            </div>
+        </div>
+
+        <div id="cartSidebar" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex flex-col justify-end">
+            <div id="sidebarContent" class="bg-white w-full rounded-t-[2rem] max-w-[500px] mx-auto translate-y-full transition-transform duration-300 flex flex-col max-h-[80vh]">
+                <div class="p-5 border-b flex justify-between items-center">
+                    <h2 class="text-lg font-black text-slate-800 uppercase">Mon Panier</h2>
+                    <button onclick="toggleCart()" class="text-xs font-bold text-slate-400">FERMER</button>
+                </div>
+                <div id="cartItems" class="flex-grow overflow-y-auto p-5"></div>
+                <div class="p-5 border-t bg-slate-50 rounded-b-[2rem]">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="font-bold text-[10px] text-slate-400">TOTAL</span>
+                        <span id="cartTotal" class="text-xl font-black">0 F</span>
+                    </div>
+                    <button id="checkoutBtn" onclick="openOrderModal()" disabled class="w-full bg-slate-300 text-white font-bold py-3 rounded-xl uppercase text-xs">Commander</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="orderModal" class="hidden fixed inset-0 bg-slate-900/80 z-[60] flex items-center justify-center p-6 text-center">
+            <div class="bg-white w-full max-w-[350px] rounded-[2rem] p-6 shadow-2xl">
+                <div id="modalForm">
+                    <h2 class="text-lg font-black mb-4 uppercase">Votre Nom</h2>
+                    <input type="text" id="clientName" placeholder="..." class="w-full p-3 bg-slate-100 rounded-xl mb-4 text-center font-bold outline-none border-2 border-transparent focus:border-slate-900">
+                    <button onclick="startOrderProcess()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl uppercase text-sm">Valider</button>
+                    <button onclick="closeModal()" class="mt-3 text-[9px] text-slate-400 font-bold uppercase">Retour</button>
+                </div>
+                <div id="modalWait" class="hidden py-4">
+                    <div class="text-4xl mb-2">🚀</div>
+                    <h2 class="text-sm font-black uppercase">Envoi en cours...</h2>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-4">
+                        <div id="progressBar" class="bg-emerald-500 h-full w-0"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let currentProduct = {};
+        // --- GESTION DU DÉMARRAGE AUTOMATIQUE ---
+        window.onload = () => {
+            setTimeout(() => {
+                const welcome = document.getElementById('welcome-screen');
+                welcome.style.opacity = '0';
+                
+                const shop = document.getElementById('shop-container');
+                shop.classList.add('show-shop');
 
-        function openOrderModal(name, price, phone) {
-            currentProduct = { name, price, phone };
-            document.getElementById('orderModal').classList.remove('hidden');
-            document.getElementById('modalForm').classList.remove('hidden');
-            document.getElementById('modalWait').classList.add('hidden');
+                // Cascade des produits
+                document.querySelectorAll('.card-item').forEach((card, i) => {
+                    setTimeout(() => card.classList.add('animate-card'), i * 50);
+                });
+
+                setTimeout(() => welcome.remove(), 800);
+            }, 3000); // 3 secondes d'attente
+        };
+
+        // --- LOGIQUE PANIER ---
+        let cart = JSON.parse(localStorage.getItem('pb_cart')) || [];
+
+        function updateUI() {
+            localStorage.setItem('pb_cart', JSON.stringify(cart));
+            const count = document.getElementById('cartCount'), pointer = document.getElementById('pointerIcon');
+            const container = document.getElementById('cartItems'), totalEl = document.getElementById('cartTotal'), btn = document.getElementById('checkoutBtn');
+            count.innerText = cart.length;
+            pointer.classList.toggle('hidden', cart.length === 0);
+            if(cart.length === 0) {
+                container.innerHTML = '<div class="py-8 opacity-30 italic text-xs text-center">Votre panier est vide</div>';
+                btn.disabled = true; btn.className = "w-full bg-slate-200 text-slate-400 font-bold py-3 rounded-xl uppercase text-xs";
+            } else {
+                btn.disabled = false; btn.className = "w-full bg-emerald-600 text-white font-bold py-3 rounded-xl uppercase text-xs shadow-lg";
+                container.innerHTML = cart.map((item, index) => `<div class="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100 mb-2"><div class="flex-grow"><h4 class="text-[9px] font-bold uppercase text-slate-500 truncate w-32">${item.name}</h4><p class="text-emerald-600 font-black text-xs">${item.price.toLocaleString()} F</p></div><button onclick="removeFromCart(${index})" class="text-red-400 font-bold px-2">✕</button></div>`).join('');
+            }
+            totalEl.innerText = `${cart.reduce((s, i) => s + i.price, 0).toLocaleString()} F`;
         }
 
-        function closeModal() {
-            document.getElementById('orderModal').classList.add('hidden');
+        function addToCart(name, price, type) {
+            cart.push({ name, price, type }); updateUI();
         }
+
+        function removeFromCart(i) { cart.splice(i, 1); updateUI(); }
+        function toggleCart() {
+            const s = document.getElementById('cartSidebar'), c = document.getElementById('sidebarContent');
+            if(s.classList.contains('hidden')) { s.classList.remove('hidden'); setTimeout(() => c.classList.add('cart-open'), 10); }
+            else { c.classList.remove('cart-open'); setTimeout(() => s.classList.add('hidden'), 300); }
+        }
+        function openOrderModal() { document.getElementById('modalForm').classList.remove('hidden'); document.getElementById('modalWait').classList.add('hidden'); document.getElementById('orderModal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('orderModal').classList.add('hidden'); }
 
         function startOrderProcess() {
-            const clientName = document.getElementById('clientName').value.trim();
-            if (!clientName) return alert("Veuillez entrer votre nom.");
-
-            // Switch d'affichage
+            const name = document.getElementById('clientName').value.trim();
+            if (!name) return alert("Nom ?");
             document.getElementById('modalForm').classList.add('hidden');
             document.getElementById('modalWait').classList.remove('hidden');
-            
-            // Lancement barre et texte
             const bar = document.getElementById('progressBar');
-            bar.classList.add('animate-progress-5s');
+            bar.classList.add('animate-progress-3s');
             
-            const status = document.getElementById('statusText');
-            setTimeout(() => { status.innerText = "Génération du bon de commande..."; }, 1500);
-            setTimeout(() => { status.innerText = "Connexion à WhatsApp..."; }, 3500);
+            const date = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+            const phone = cart.some(i => i.type === 'GEM') ? "22957163510" : "22968593238";
+            let list = cart.map(i => `• *${i.name}* (${i.price.toLocaleString()} F)`).join('\n');
+            const total = cart.reduce((s, i) => s + i.price, 0);
 
-            // Message final
-            const msg = `🛍 *NOUVELLE COMMANDE - RÉSEAU MEDJOGBE*\n\n` +
-                        `Bonjour, je suis *${clientName}*.\n` +
-                        `Je souhaite commander le produit suivant :\n\n` +
-                        `📦 *Produit :* ${currentProduct.name}\n` +
-                        `💰 *Prix :* ${currentProduct.price} F\n\n` +
-                        `❓ *Question :* J'aimerais savoir comment les produits me seront envoyés et quel est le délai de réception ?\n\n` +
-                        `✅ _Commande effectuée via le site web_`;
+            const msg = `👋 *Bonjour PRIME BUSINESS !*\n\nMoi c'est *${name}*. Je commande ce ${date} :\n\n${list}\n\n💵 Total : *${total.toLocaleString()} F*\n\n📍 Disponibilité et livraison ?\n\nMerci ! 🙏`;
 
-            const encodedMsg = encodeURIComponent(msg);
-            const isMobile = /iPhone|Android/i.test(navigator.userAgent);
-            const finalUrl = isMobile 
-                ? `whatsapp://send?phone=${currentProduct.phone}&text=${encodedMsg}` 
-                : `https://api.whatsapp.com/send?phone=${currentProduct.phone}&text=${encodedMsg}`;
-
-            // Redirection après 5s
             setTimeout(() => {
-                window.location.href = finalUrl;
-                setTimeout(() => { closeModal(); }, 1000);
-            }, 5000);
+                window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+                cart = []; updateUI(); closeModal(); toggleCart();
+                bar.classList.remove('animate-progress-3s');
+            }, 3000);
         }
+        updateUI();
     </script>
 </body>
 </html>
